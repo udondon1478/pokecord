@@ -1,5 +1,6 @@
 import discord
 import random
+import os
 from discord import app_commands
 
 intents = discord.Intents.default()
@@ -8,6 +9,17 @@ intents.members = True
 intents.presences = True
 client = discord.Client(intents=intents)
 tree = app_commands.CommandTree(client)
+
+#環境変数をファイルから読み込み
+with open('.env') as f:
+    for line in f:
+        # 空行やコメントをスキップ
+        if line.strip() and not line.startswith('#'):
+            key, value = line.strip().split('=', 1)
+            os.environ[key] = value
+
+
+BOT_TOKEN = os.environ["BOT_TOKEN"]
 
 # ポケモンとバトルスタイルの対応表 (辞書型を使用)
 pokemon_data = {
@@ -322,10 +334,10 @@ async def split_teams(interaction: discord.Interaction, team_count: int):
     description="コマンド実行チャンネルにアクセスできるオンラインメンバーをランダムにチーム分けします",
 )
 async def online_team(interaction: discord.Interaction, team_count: int):
-    """オンライン状態のメンバーから5人をランダムに選択する"""
+    """コマンド実行チャンネルにアクセスできるオンラインメンバーを指定したチーム数に振り分ける"""
 
     # コマンド実行チャンネルにアクセス可能なオンラインメンバーを取得
-    online_members = [member for member in interaction.channel.members if member.status == discord.Status.online]
+    online_members = [member for member in interaction.channel.members if member.status == discord.Status.online and not member.bot]
 
     # メンバー数がチーム数より少ない場合はエラーを表示
     if len(online_members) < team_count:
@@ -334,10 +346,18 @@ async def online_team(interaction: discord.Interaction, team_count: int):
         )
         return
 
-    # チームをテキストに変換
-    team_text = "チーム}\n"
-    for i, member in enumerate(selected_members, 1):
-        team_text += f"{i}. {member.display_name}\n"
+    # メンバーをランダムにシャッフルしてチームに分ける
+    random.shuffle(online_members)
+    teams = [[] for _ in range(team_count)]
+    for i, member in enumerate(online_members):
+        teams[i % team_count].append(member)
+
+    # 各チームをテキストに変換
+    team_text = ""
+    for i, team in enumerate(teams):
+        team_text += f"チーム{i + 1}:\n"
+        for member in team:
+            team_text += f"- {member.display_name}\n"
 
     # Embedメッセージを作成して送信
     embed = discord.Embed(
@@ -402,4 +422,4 @@ async def help_command(interaction: discord.Interaction):
     await interaction.response.send_message(embed=help_embed, ephemeral=True)
 
 
-client.run("botのトークンを入力してください")
+client.run(BOT_TOKEN)
