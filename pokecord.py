@@ -321,35 +321,27 @@ async def split_teams(interaction: discord.Interaction, team_count: int):
     name="オンラインチーム",
     description="コマンド実行チャンネルにアクセスできるオンラインメンバーをランダムにチーム分けします",
 )
-async def online_team(interaction: discord.Interaction):
+async def online_team(interaction: discord.Interaction, team_count: int):
     """オンライン状態のメンバーから5人をランダムに選択する"""
 
-    # ギルド内の全メンバーからオンライン状態のメンバーを取得
-    guild = interaction.guild
-    online_members = [
-        member
-        for member in guild.members
-        if member.status == discord.Status.online and not member.bot
-    ]
+    # コマンド実行チャンネルにアクセス可能なオンラインメンバーを取得
+    online_members = [member for member in interaction.channel.members if member.status == discord.Status.online]
 
-    # オンラインメンバーが5人未満の場合はエラーを表示
-    if len(online_members) < 5:
+    # メンバー数がチーム数より少ない場合はエラーを表示
+    if len(online_members) < team_count:
         await interaction.response.send_message(
-            "オンラインのメンバーが5人以上必要です。", ephemeral=True
+            "チーム数がオンラインメンバー数を上回っています。", ephemeral=True
         )
         return
 
-    # ランダムに5人を選択
-    selected_members = random.sample(online_members, 5)
-
     # チームをテキストに変換
-    team_text = "5人チーム:\n"
+    team_text = "チーム}\n"
     for i, member in enumerate(selected_members, 1):
         team_text += f"{i}. {member.display_name}\n"
 
     # Embedメッセージを作成して送信
     embed = discord.Embed(
-        title="オンライン5人チーム", description=team_text, color=0x17A168
+        title="ランダムチーム", description=team_text, color=0x17A168
     )
     await interaction.response.send_message(embed=embed)
 
